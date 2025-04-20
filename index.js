@@ -5,6 +5,8 @@ const app = express();
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const cloudinary = require('./cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const path = require("path");
 const cors = require("cors");
 const { log } = require("console");
@@ -23,28 +25,42 @@ app.get("/", (req, res) => {
 });
 
 // Image Storage Engine
-const storage = multer.diskStorage({
-  destination: "./upload/images",
-  filename: (req, file, cb) => {
-    return cb(
-      null,
-      `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`
-    );
-  },
-});
+// const storage = multer.diskStorage({
+//   destination: "./upload/images",
+//   filename: (req, file, cb) => {
+//     return cb(
+//       null,
+//       `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`
+//     );
+//   },
+// });
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: 'shopp-products', // optional folder name in your Cloudinary media library
+      allowed_formats: ['jpg', 'png', 'jpeg'],
+      transformation: [{ width: 500, height: 500, crop: 'limit' }],
+    },
+  });
 
 const upload = multer({ storage: storage });
 
 // Creating upload endpoint for images
 
-app.use("/images", express.static("upload/images"));
+// app.use("/images", express.static("upload/images"));
 
+// app.post("/upload", upload.single("product"), (req, res) => {
+//   res.json({
+//     success: 1,
+//     image_url: `https://shopp-backend-7nee.onrender.com/images/${req.file.filename}`,
+//   });
+// });
 app.post("/upload", upload.single("product"), (req, res) => {
-  res.json({
-    success: 1,
-    image_url: `http://localhost:${port}/images/${req.file.filename}`,
+    res.json({
+      success: 1,
+      image_url: req.file.path, // Cloudinary image URL
+    });
   });
-});
 
 // Schema for creating products
 
